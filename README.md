@@ -25,9 +25,14 @@ Contudo, esse processo é bastante repetitivo, pois alem do formato dos arquivos
 
 O presente aplicativo propoe uma solução para otimizar esse fluxo, utilizando tecnicas de processamento digital de imagens para realizar a edição das imagens e a geração dos documentos para o usuario 😃
 
-### Detalhes da problemética:
+### Detalhes da problemática:
 
-O documento de coleta das informações dos médicos segue o padrão:
+O documento de coleta das informações dos médicos segue o padrão (rubricas de teste geradas pelo autor):
 
+![alt text](https://github.com/AugustMatt/DetectorAssinaturas/blob/master/documentos/base/1.jpg)
+
+Os arquivos a serem gerados devem ter as seguintes medidas:
+
+Prescrição : 
 
   
