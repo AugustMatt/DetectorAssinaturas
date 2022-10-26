@@ -31,6 +31,8 @@ O documento de coleta das informações dos médicos segue o padrão (rubricas d
 
 ![alt text](https://github.com/AugustMatt/DetectorAssinaturas/blob/master/documentos/base/1.jpg)
 
+Os arquivos a serem gerados devem ter as seguintes medidas:
 
+Prescrição : 
 
   
