@@ -31,8 +31,33 @@ O documento de coleta das informações dos médicos segue o padrão (rubricas d
 
 ![alt text](https://github.com/AugustMatt/DetectorAssinaturas/blob/master/documentos/base/1.jpg)
 
-Os arquivos a serem gerados devem ter as seguintes medidas:
+Os arquivos a serem gerados devem ter formato .bmp de 64 bits e as seguintes medidas:
 
 Prescrição : 
+<ul>
+  <li>344 pixels de largura</li>
+  <li>143 pixels de altura</li> 
+  <li>Rubrica posicionada na parte superior direita sem tocar as bordas</li>
+  <li>Carimbo posicionado logo abaixo da Rubrica</li>
+  <li>Tentar deixar o conjunto (Carimbo + Rubrica) o mais centralizado nesse espaço possivel</li>
+</ul>
+
+Imagem de exemplo:
+
+![alt text](https://github.com/AugustMatt/DetectorAssinaturas/blob/master/exemplo_prescricao.bmp)
+
+Evolução : 
+<ul>
+  <li>268 pixels de largura</li>
+  <li>85 pixels de altura</li>
+  <li>Rubrica posicionada na parte esquerda sem tocar as bordas</li>
+  <li>Carimbo posicionado ao lado direito da Rubrica</li>
+  <li>Tentar deixar o Carimbo o mais centralizado possivel no espaço restante ao mesmo</li>
+</ul>
+
+Imagem de exemplo:
+
+![alt text](https://github.com/AugustMatt/DetectorAssinaturas/blob/master/exemplo_evolucao.bmp)
+
 
   
