@@ -27,7 +27,10 @@ O presente aplicativo propoe uma solução para otimizar esse fluxo, utilizando 
 
 ### Detalhes da problemética:
 
-O documento de coleta das informações dos médicos segue o padrão:
+O documento de coleta das informações dos médicos segue o padrão (rubricas de teste geradas pelo autor):
 
+![alt text](https://github.com/AugustMatt/DetectorAssinaturas/blob/master/exemplo_assinaturas.jpeg)
+
+obs: algumas informações e detalhes nas bordas do documento foram removidas da imagem para preservar a anonimidade da empresa.
 
   
