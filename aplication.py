@@ -140,13 +140,15 @@ def VerifyBorder(squares, cnt):
     return verify
 
 # Retorna os contornos retangulares de uma imagem
-def detect_squares(img, use_dilate=False):
+def detect_squares(img):
 
+    # Aplica filtro de borramento gaussiano para suavizar a imagem
     img = cv2.GaussianBlur(img, (5, 5), 0)
 
     # Array que ira armazenar os contornos dos possiveis retangulos das assinaturas
     squares = []
    
+    # Para toda a matriz de pixels da imagem
     for gray in cv2.split(img):
 
         # Loop de 10 iterações
@@ -156,11 +158,6 @@ def detect_squares(img, use_dilate=False):
             if thrs == 0:
 
                 bin = cv2.Canny(gray, 0, 50, apertureSize=3)
-
-                # Dilatação condicional na primeira iteração
-                if(use_dilate):
-                    bin = cv2.dilate(bin, None)
-
                 #cv2.imshow('bin canny', bin)
 
             # Nas demais iterações, utiliza o threshold binário para destacar as bordas
@@ -169,7 +166,8 @@ def detect_squares(img, use_dilate=False):
             else:
                 retval, bin = cv2.threshold(gray, thrs, 255, cv2.THRESH_BINARY)
                 #cv2.imshow('bin threshold limit ' + str(thrs), bin)
-            
+           
+
             # Extrai os contornos da imagem
             contours, hierarchy = cv2.findContours(bin, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
             #print("iteração: ", thrs, " contornos: ", len(contours))
