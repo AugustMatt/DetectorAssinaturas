@@ -29,7 +29,9 @@ O presente aplicativo propoe uma solução para otimizar esse fluxo, utilizando 
 
 O documento de coleta das informações dos médicos segue o padrão (rubricas de teste geradas pelo autor):
 
-![alt text](https://github.com/AugustMatt/DetectorAssinaturas/blob/master/documentos/base/1.jpg)
+<div align="center">
+  <img src="https://github.com/AugustMatt/DetectorAssinaturas/blob/master/documentos/base/1.jpg" width=50% height=50%>
+</div>
 
 Os arquivos a serem gerados devem ter formato .bmp de 64 bits e as seguintes medidas:
 
@@ -44,7 +46,7 @@ Prescrição :
 
 Imagem de exemplo:
 
-![alt text](https://github.com/AugustMatt/DetectorAssinaturas/blob/master/exemplo_prescricao.bmp)
+![alt text](https://github.com/AugustMatt/DetectorAssinaturas/blob/master/documentos/imagens_exemplo/exemplo_prescricao.bmp)
 
 Evolução : 
 <ul>
@@ -57,7 +59,7 @@ Evolução :
 
 Imagem de exemplo:
 
-![alt text](https://github.com/AugustMatt/DetectorAssinaturas/blob/master/exemplo_evolucao.bmp)
+![alt text](https://github.com/AugustMatt/DetectorAssinaturas/blob/master/documentos/imagens_exemplo/exemplo_evolucao.bmp)
 
 ### Limitações atuais:
 
@@ -159,7 +161,198 @@ varios niveis de corte:
                 retval, bin = cv2.threshold(gray, thrs, 255, cv2.THRESH_BINARY)
 ```
 
-Um exemplo das bordas extraidas via Canny:
+Um exemplo das bordas detectadas via Canny:
+<div align="center">
+  <img src="https://github.com/AugustMatt/DetectorAssinaturas/blob/master/documentos/imagens_exemplo/exemplo_canny.PNG" width=50% height=50%>
+</div>
+
+Exemplo das bordas utilizando threshold com limiares respectivamente 26, 104 e 208:
+<div align="center">
+  <img src="https://github.com/AugustMatt/DetectorAssinaturas/blob/master/documentos/imagens_exemplo/exemplo_threshold26.PNG" width=50% height=50%>
+  <img src="https://github.com/AugustMatt/DetectorAssinaturas/blob/master/documentos/imagens_exemplo/exemplo_threshold104.PNG" width=50% height=50%>
+  <img src="https://github.com/AugustMatt/DetectorAssinaturas/blob/master/documentos/imagens_exemplo/exemplo_threshold208.PNG" width=50% height=50%>
+</div>
+
+Em seguida extraimos os contornos da imagem. Contudo precisamos selecionar apenas os contornos retangulares. 
+Para isso, inicialmente iremos iterar os contornos obtidos e aproxima-los a um poligono fechado de grau menor que a quantidade de vertices dos contornos obtidos :
+```python
+# Extrai os contornos da imagem
+contours, hierarchy = cv2.findContours(bin, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+
+# Para cada contorno encontrado
+for cnt in contours:
+
+    # Calcula o perimetro do contorno, supondo que é um contorno fechado
+    cnt_len = cv2.arcLength(cnt, True)
+
+    # Aproxima o contorno a um poligono fechado com numero de vertices menor que o contorno original
+    # O objetivo é aproximar contornos a retangulos
+    cnt = cv2.approxPolyDP(cnt, 0.02 * cnt_len, True)
+```
+
+Se esse poligono aproximado possuir 4 vertices, é um quadrilateró. Alem disso podemos utilizar outras metricas para ter melhor precisão de que aquele contorno é de fato
+um retangulo. Nesse caso, usarei inicialmente a area desse poligono e se o mesmo é convexo:
+```python
+if len(cnt) == 4 and cv2.contourArea(cnt) > 1000 and cv2.isContourConvex(cnt):
+```
+
+Uma outra métrica interressante é o angulo entre suas arestas. Em um retangulo ideal, as arestas adjacentes tem um angulo de 90 graus. Vamos então calcular atraves do produto escalar o cosseno do angulo entre todas as arestas adjacentes desse poligono. Se todas elas forem suficientemente pequenas, serão bem proximas de 90 graus, logo
+considerarei aquele poligono um retangulo:
+```python
+# Vamos verificar se o contorno é um retangulo ou algo muito proximo atraves do angulo entre os lados
+
+# Reajusta o array de pontos do contorno 
+cnt = cnt.reshape(-1, 2)
+
+# Acha o maior angulo entre os vetores que ligam os pontos do contorno
+max_cos = np.max([angle_cos(cnt[i], cnt[(i + 1) % 4], cnt[(i + 2) % 4]) for i in range(4)])
+
+# Se o angulo for menor que 0.1, consideremos que o contorno é um retangulo
+if max_cos < 0.1:
+```
+
+A função angle_cos() utilizada:
+```python
+# Retorna o angulo entre dois vetores que compartilham um mesmo ponto
+def angle_cos(p0, p1, p2):
+
+    # Cosseno do angulo entre os vetores
+    d1, d2 = (p0 - p1).astype('float'), (p2 - p1).astype('float')
+
+    # Normalização
+    return abs(np.dot(d1, d2) / np.sqrt(np.dot(d1, d1) * np.dot(d2, d2)))
+```
+
+Por fim, usaremos agora algumas metricas para tentar ignorar alguns contornos que possam aparecer mas que não são os contornos que envolvem as rubricas:
+```python
+# Se o retangulo tiver largura menor que 5% da largura da imagem completa, é um retangulo pequeno demais para ser da assinatura
+# Ou se o retangulo tiver largura maior que o 50% da largura da imagem completa, é um quadrado muito grande para ser da assinatura
+# Em ambos os casos, descartamos o retangulo
+if(cnt[1][1] - cnt[0][1] < 0.05*img.shape[1] or cnt[1][1] - cnt[0][1]  > 0.5*img.shape[1]):
+    continue
+
+# Se o retangulo estiver na esquerda da imagem, descartamos o retangulo
+# Pois a assinatura deve estar na direita da imagem
+# Talvez seja uma boa ideia adicionar uma margem de erro para casos em que a assinatura esteja um pouco deslocada
+minimal = min(cnt[0][0], cnt[2][0])
+if(minimal < (img.shape[1]/2)):
+    continue
+
+# Verifica se o contorno atual ja está no array de contornos evitando assim contornos duplicados
+if(VerifyBorder(squares, cnt)):
+    continue
+
+# Armazena o contorno do retangulo
+squares.append(cnt)
+```
+
+Apos o armazenamento dos contornos, retorna o array que os contem:
+```python
+return squares
+```
+
+Retornando a função App() e agora de posso dos contornos retangulares da nossa imagem, vamos extrai-los da imagem original, aplicar alguns processamento para melhora-los e destaca-los:
+```python
+# Array para armazenar as imagens das assinaturas recortadas e processadas
+signatures = []
+
+# Array para armazenar as imagens processadas no formato legivel pela biblioteca TKinter
+signatures_pil = []
+
+# Array para armazenar os campos de texto das assinaturas
+signatures_entrys = []
+
+# Iterador para inserção de dados em arrays
+i = 0
+
+# Para cada retangulo encontrado
+for square in squares:
+
+    # Encontra as coordenadas do retangulo na imagem e extrai
+    x, y, w, h = cv2.boundingRect(square)
+    cv2.rectangle(img, (x, y), (x + w, y + h), (0, 255, 0), 2)
+    roi = img[y:y + h, x:x + w]
+
+    # Limpa possiveis bordas pretas do recorte
+    cleaned_crop = ClearBorder(roi)
+
+    # Processos para tentar remover possiveis ruidos do recorte
+    # Isso pode danificar a assinatura
+    eroded_crop = cv2.erode(cleaned_crop, np.ones((3, 3), np.uint8), iterations=1)    
+    ret, bin_eroded_crop = cv2.threshold(eroded_crop, 200, 255, cv2.THRESH_BINARY)
+
+    # Remove pequenos componentes conectados da imagem
+    inverted_crop = cv2.bitwise_not(bin_eroded_crop)
+    processed_crop = RemoveConectedComponentes(inverted_crop, 100)
+    processed_crop = InvertImage(processed_crop)
+
+    # Adquire o exato recorte da assinatura removendo o fundo branco
+    processed_crop = GetBoundRectangle(processed_crop) 
+
+    # Caso a imagem tenha completamente deteriorada devido o processamento, descarta a assinatura
+    if(isinstance(processed_crop, bool)):
+        continue
+
+    # Redimensiona a assinatura para um tamanho padrao
+    resized_crop = Resize(processed_crop)
+
+    # Adiciona a assinatura no array de assinaturas
+    signatures.append(resized_crop)
+
+    # Converte a assinatura para o formato PIL para ser exibida na tela do aplicativo
+    signatures_pil.append(ImageTk.PhotoImage(image=Image.fromarray(resized_crop)))
+
+    # Cria um entrada de texto para aquela imagem
+    signatures_entrys.append(tkinter.Entry(janela, width=50, name=str(i)))
+
+    i+=1
+
+# Cria os campos de texto do aplicativo
+for i in range(0, len(signatures_pil)):
+    tkinter.Label(janela, image=signatures_pil[i]).pack(expand=True)
+    signatures_entrys[i].insert(0, "Digite o nome da assinatura. Mantenha em branco para não utilizar a assinatura")
+    signatures_entrys[i].pack(expand=True)
+    signatures_entrys[i].bind("<Button-1>", EntryOnClick)
+
+# Cria o botão de salvar assinaturas
+tkinter.Button(janela, text="Salvar", width=42, command=lambda: SaveSignatures(janela, signatures)).pack(side=tkinter.BOTTOM, pady=5)
+
+# Inicia a aplicação
+janela.mainloop()
+```
+
+A função para remover componentes conectados utilizada:
+```python
+# Remove conjuntos de pixels conectados com min_pixels_quant ou menos
+def RemoveConectedComponentes(img, min_pixels_quant):
+
+    nb_components, output, stats, centroids = cv2.connectedComponentsWithStats(
+        img, connectivity=8)
+    sizes = stats[1:, -1]
+    nb_components = nb_components - 1
+    min_size = min_pixels_quant
+    img_processada2 = np.zeros((output.shape))
+    for i in range(0, nb_components):
+        if sizes[i] >= min_size:
+            img_processada2[output == i + 1] = 255
+
+    return img_processada2
+```
+
+A função para inverter os pixels da imagem utilizada:
+```python
+# Inverte imagem
+def InvertImage(img):
+    img_copy = img
+    for y in range(0, img_copy.shape[1]):
+        for x in range(0, img_copy.shape[0]):
+            img_copy[x][y] = 255 - img_copy[x][y]
+
+    return img_copy
+```
+
+Exemplo do aplicativo mostrando as imagens obtidas e campos de texto para salva-las posteriormente se desejado.
+Note que nem todas as rubricas foram devidamente obtidas.
 
 
 
