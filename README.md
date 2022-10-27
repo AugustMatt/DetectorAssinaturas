@@ -126,6 +126,42 @@ Logo em seguida, carregamos a imagem inserida pelo usuario em escala de cinza e 
  squares = detect_squares(img)
 ```
 
+Em detect_squares(), inicialmente aplicamos um filtro de borramento na imagem para suavização. Alem disso criamos um array "squares" que armazenará possiveis contornos
+retangulares que tentaremos encontrar em breve:
+```python
+# Retorna os contornos retangulares de uma imagem
+def detect_squares(img):
+
+    # Aplica filtro de borramento gaussiano para suavizar a imagem
+    img = cv2.GaussianBlur(img, (5, 5), 0)
+
+    # Array que ira armazenar os contornos dos possiveis retangulos das assinaturas
+    squares = []
+```
+
+Em seguida, pegamos nossa imagem e vamos aplicar o algoritmo de canny para tentar detectar as bordas da imagem, como tambem o algoritmo de threshold binario, utilizando
+varios niveis de corte:
+```python
+# Para toda a matriz de pixels da imagem
+    for gray in cv2.split(img):
+
+        # Loop de 10 iterações
+        for thrs in range(0, 255, 26):
+
+            # Na primeira iteração, destaca as bordas da imagem com o algoritmo de Canny
+            if thrs == 0:
+                bin = cv2.Canny(gray, 0, 50, apertureSize=3)
+
+            # Nas demais iterações, utiliza o threshold binário para destacar as bordas
+            # Note que o valor de threshold é incrementado de 26 em 26
+            # Para valores de thrs acima de 200, as bordas via threshold são bem distinguiveis
+            else:
+                retval, bin = cv2.threshold(gray, thrs, 255, cv2.THRESH_BINARY)
+```
+
+Um exemplo das bordas extraidas via Canny:
+
+
 
 
 
