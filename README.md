@@ -246,6 +246,34 @@ if(VerifyBorder(squares, cnt)):
 squares.append(cnt)
 ```
 
+Função para verificar a duplicidade de contornos:
+```python
+# Verifica se um contorno ja está no array de contornos
+def VerifyBorder(squares, cnt):
+    
+    margin = 10
+
+    # Bordas do contorno
+    max_x = max(cnt[0][0], cnt[2][0])
+    min_x = min(cnt[0][0], cnt[2][0])
+    max_y = max(cnt[0][1], cnt[2][1])
+    min_y = min(cnt[0][1], cnt[2][1])
+
+    # verifica se o contorno atual e seus deslocamentos batem com algum contorno dentro de squares
+    verify = False
+    for square in squares:
+        if(
+            min_x - margin < max(square[0][0], square[2][0]) 
+        and max_x + margin > min(square[0][0], square[2][0]) 
+        and min_y - margin < max(square[0][1], square[2][1]) 
+        and max_y + margin > min(square[0][1], square[2][1])):
+        
+            verify = True
+            break
+        
+    return verify
+```
+
 Apos o armazenamento dos contornos, retorna o array que os contem:
 ```python
 return squares
@@ -320,6 +348,22 @@ tkinter.Button(janela, text="Salvar", width=42, command=lambda: SaveSignatures(j
 # Inicia a aplicação
 janela.mainloop()
 ```
+Função para limpar a borda utilizada:
+```python
+# Limpa bordas da imagem
+def ClearBorder(img):
+    vertical_value = 15
+    horizontal_value = 15
+    img_copy = img
+    for y in range(0, img_copy.shape[1]):
+        for x in range(0, img_copy.shape[0]):
+            if(y < horizontal_value or y > img_copy.shape[1] - horizontal_value):
+                img_copy[x][y] = 255
+            elif(x < vertical_value or x > img_copy.shape[0] - vertical_value):
+                img_copy[x][y] = 255
+
+    return img_copy
+```
 
 A função para remover componentes conectados utilizada:
 ```python
@@ -351,10 +395,103 @@ def InvertImage(img):
     return img_copy
 ```
 
+Função para recortar somente a rubrica:
+```python
+# Fatia a imagem para remover os espaços em branco
+def GetBoundRectangle(img):
+    black_pixels = []
+    for y in range(0, img.shape[0]):
+        for x in range(0, img.shape[1]):
+            if(img[y][x] == 0):
+                black_pixels.append((y, x))
+
+    try:
+        min_x = min(black_pixels, key=lambda x: x[1])[1]
+        min_y = min(black_pixels, key=lambda x: x[0])[0]
+        max_x = max(black_pixels, key=lambda x: x[1])[1]
+        max_y = max(black_pixels, key=lambda x: x[0])[0]
+        cropped = img[min_y-2:max_y+2, min_x-2:max_x+2]
+        return cropped
+    except:
+        return False
+```
+
+Função para redimensionar utilizada:
+```python
+# Redimensiona a imagem para o tamanho necessario no aplicativo
+def Resize(img):
+
+    # Inicialmente, a imagem está em 100% do seu tamanho
+    scale_percent = 100
+    resized = img
+
+    # Enquanto a escala de tamanho da largura for maior que 85% ou a escala de tamanho da altura for maior que 89%
+    while resized.shape[0] > 85 or resized.shape[1] > 89:
+
+        # Reduz a escala de tamanho da imagem em 1%
+        scale_percent += -1
+        width = int(img.shape[1] * scale_percent / 100)
+        height = int(img.shape[0] * scale_percent / 100)
+        dim = (width, height)
+        resized = cv2.resize(img, dim, interpolation=cv2.INTER_AREA)
+
+    return resized
+```
+
+Funções de eventos envolvendo os campos de texto e o botão de salvar da aplicação:
+```python
+# Evento de clique no campo de texto
+def EntryOnClick(event):
+    entry = event.widget
+    print(str(entry))
+    if entry.get()=="Digite o nome da assinatura":
+        entry.delete(0, tkinter.END)
+        entry.insert(0, "")
+
+# Pega todos os textos em todos os campos de texto na aplicação
+def GetEntries(janela):
+    entries = []
+    for entry in janela.winfo_children():    
+        if isinstance(entry, tkinter.Entry):
+            if(entry.get() =="Digite o nome da assinatura" or entry.get()==""):
+                continue
+            entries.append(entry)
+        
+    return entries
+```
+
+Funções de criação dos arquivos de evolução e prescrição:
+```python
+# Cria o arquivo da evolução
+def CreateEvolution(img):
+    img_background = np.zeros((85, 268))
+    img_background = InvertImage(img_background)
+    y_offset = floor((85 - img.shape[0])/2)
+    x_offset = 2
+    img_background[y_offset:y_offset+img.shape[0],
+                   x_offset:x_offset+img.shape[1]] = img
+    return img_background
+
+# Cria o arquivo da prescrição
+def CreatePrescription(img):
+
+    img_background = np.zeros((143, 344))
+    img_background = InvertImage(img_background)
+
+    middle_x = floor(img_background.shape[1]/2)
+    x_offset = middle_x + floor( ( (img_background.shape[1]/2) - img.shape[1] ) / 2 )
+
+    y_offset = 0
+
+    img_background[y_offset:y_offset + img.shape[0], x_offset:x_offset + img.shape[1]] = img
+    return img_background
+```
+
 Exemplo do aplicativo mostrando as imagens obtidas e campos de texto para salva-las posteriormente se desejado.
-Note que nem todas as rubricas foram devidamente obtidas.
-
-
+Note que nem todas as rubricas foram devidamente obtidas. E que estas que não foram obtidas, são na verdade outros contornos retagulares presente na imagem.
+<div align="center">
+  <img src="https://github.com/AugustMatt/DetectorAssinaturas/blob/master/documentos/imagens_exemplo/exemplo_app.PNG">
+</div>
 
 
 
