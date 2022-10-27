@@ -108,10 +108,10 @@ def CreatePrescription(img):
 # Retorna o angulo entre dois vetores que compartilham um mesmo ponto
 def angle_cos(p0, p1, p2):
 
-    # cosinus of angle between vectors
+    # Cosseno do angulo entre os vetores
     d1, d2 = (p0 - p1).astype('float'), (p2 - p1).astype('float')
 
-    # normalize
+    # Normalização
     return abs(np.dot(d1, d2) / np.sqrt(np.dot(d1, d1) * np.dot(d2, d2)))
 
 # Verifica se um contorno ja está no array de contornos
@@ -314,6 +314,7 @@ def App():
         x, y, w, h = cv2.boundingRect(square)
         cv2.rectangle(img, (x, y), (x + w, y + h), (0, 255, 0), 2)
         roi = img[y:y + h, x:x + w]
+        cv2.imshow("roi", roi)
 
         # Limpa possiveis bordas pretas do recorte
         cleaned_crop = ClearBorder(roi)
@@ -323,6 +324,7 @@ def App():
         eroded_crop = cv2.erode(cleaned_crop, np.ones((3, 3), np.uint8), iterations=1)    
         ret, bin_eroded_crop = cv2.threshold(eroded_crop, 200, 255, cv2.THRESH_BINARY)
 
+        # Remove pequenos componentes conectados da imagem
         inverted_crop = cv2.bitwise_not(bin_eroded_crop)
         processed_crop = RemoveConectedComponentes(inverted_crop, 100)
         processed_crop = InvertImage(processed_crop)
