@@ -29,7 +29,9 @@ O presente aplicativo propoe uma solução para otimizar esse fluxo, utilizando 
 
 O documento de coleta das informações dos médicos segue o padrão (rubricas de teste geradas pelo autor):
 
-![alt text](https://github.com/AugustMatt/DetectorAssinaturas/blob/master/documentos/base/1.jpg)
+<div align="center">
+  <img src="https://github.com/AugustMatt/DetectorAssinaturas/blob/master/documentos/base/1.jpg" width=50% height=50%>
+</div>
 
 Os arquivos a serem gerados devem ter formato .bmp de 64 bits e as seguintes medidas:
 
@@ -44,7 +46,7 @@ Prescrição :
 
 Imagem de exemplo:
 
-![alt text](https://github.com/AugustMatt/DetectorAssinaturas/blob/master/exemplo_prescricao.bmp)
+![alt text](https://github.com/AugustMatt/DetectorAssinaturas/blob/master/documentos/imagens_exemplo/exemplo_prescricao.bmp)
 
 Evolução : 
 <ul>
@@ -57,7 +59,7 @@ Evolução :
 
 Imagem de exemplo:
 
-![alt text](https://github.com/AugustMatt/DetectorAssinaturas/blob/master/exemplo_evolucao.bmp)
+![alt text](https://github.com/AugustMatt/DetectorAssinaturas/blob/master/documentos/imagens_exemplo/exemplo_evolucao.bmp)
 
 ### Limitações atuais:
 
@@ -159,7 +161,18 @@ varios niveis de corte:
                 retval, bin = cv2.threshold(gray, thrs, 255, cv2.THRESH_BINARY)
 ```
 
-Um exemplo das bordas extraidas via Canny:
+Um exemplo das bordas detectadas via Canny:
+<div align="center">
+  <img src="https://github.com/AugustMatt/DetectorAssinaturas/blob/master/documentos/imagens_exemplo/exemplo_canny.PNG" width=50% height=50%>
+</div>
+
+Exemplo das bordas utilizando threshold com limiares respectivamente 26, 104 e 208:
+<div align="center">
+  <img src="https://github.com/AugustMatt/DetectorAssinaturas/blob/master/documentos/imagens_exemplo/exemplo_threshold26.PNG" width=50% height=50%>
+  <img src="https://github.com/AugustMatt/DetectorAssinaturas/blob/master/documentos/imagens_exemplo/exemplo_threshold104.PNG" width=50% height=50%>
+  <img src="https://github.com/AugustMatt/DetectorAssinaturas/blob/master/documentos/imagens_exemplo/exemplo_threshold208.PNG" width=50% height=50%>
+</div>
+
 
 
 
