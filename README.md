@@ -173,7 +173,83 @@ Exemplo das bordas utilizando threshold com limiares respectivamente 26, 104 e 2
   <img src="https://github.com/AugustMatt/DetectorAssinaturas/blob/master/documentos/imagens_exemplo/exemplo_threshold208.PNG" width=50% height=50%>
 </div>
 
+Em seguida extraimos os contornos da imagem. Contudo precisamos selecionar apenas os contornos retangulares. 
+Para isso, inicialmente iremos iterar os contornos obtidos e aproxima-los a um poligono fechado de grau menor que a quantidade de vertices dos contornos obtidos :
+```python
+# Extrai os contornos da imagem
+contours, hierarchy = cv2.findContours(bin, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
 
+# Para cada contorno encontrado
+for cnt in contours:
+
+    # Calcula o perimetro do contorno, supondo que é um contorno fechado
+    cnt_len = cv2.arcLength(cnt, True)
+
+    # Aproxima o contorno a um poligono fechado com numero de vertices menor que o contorno original
+    # O objetivo é aproximar contornos a retangulos
+    cnt = cv2.approxPolyDP(cnt, 0.02 * cnt_len, True)
+```
+
+Se esse poligono aproximado possuir 4 vertices, é um quadrilateró. Alem disso podemos utilizar outras metricas para ter melhor precisão de que aquele contorno é de fato
+um retangulo. Nesse caso, usarei inicialmente a area desse poligono e se o mesmo é convexo:
+```python
+if len(cnt) == 4 and cv2.contourArea(cnt) > 1000 and cv2.isContourConvex(cnt):
+```
+
+Uma outra métrica interressante é o angulo entre suas arestas. Em um retangulo ideal, as arestas adjacentes tem um angulo de 90 graus. Vamos então calcular atraves do produto escalar o cosseno do angulo entre todas as arestas adjacentes desse poligono. Se todas elas forem suficientemente pequenas, serão bem proximas de 90 graus, logo
+considerarei aquele poligono um retangulo:
+```python
+# Vamos verificar se o contorno é um retangulo ou algo muito proximo atraves do angulo entre os lados
+
+# Reajusta o array de pontos do contorno 
+cnt = cnt.reshape(-1, 2)
+
+# Acha o maior angulo entre os vetores que ligam os pontos do contorno
+max_cos = np.max([angle_cos(cnt[i], cnt[(i + 1) % 4], cnt[(i + 2) % 4]) for i in range(4)])
+
+# Se o angulo for menor que 0.1, consideremos que o contorno é um retangulo
+if max_cos < 0.1:
+```
+
+A função angle_cos() utilizada:
+```python
+# Retorna o angulo entre dois vetores que compartilham um mesmo ponto
+def angle_cos(p0, p1, p2):
+
+    # Cosseno do angulo entre os vetores
+    d1, d2 = (p0 - p1).astype('float'), (p2 - p1).astype('float')
+
+    # Normalização
+    return abs(np.dot(d1, d2) / np.sqrt(np.dot(d1, d1) * np.dot(d2, d2)))
+```
+
+Por fim, usaremos agora algumas metricas para tentar ignorar alguns contornos que possam aparecer mas que não são os contornos que envolvem as rubricas:
+```python
+# Se o retangulo tiver largura menor que 5% da largura da imagem completa, é um retangulo pequeno demais para ser da assinatura
+# Ou se o retangulo tiver largura maior que o 50% da largura da imagem completa, é um quadrado muito grande para ser da assinatura
+# Em ambos os casos, descartamos o retangulo
+if(cnt[1][1] - cnt[0][1] < 0.05*img.shape[1] or cnt[1][1] - cnt[0][1]  > 0.5*img.shape[1]):
+    continue
+
+# Se o retangulo estiver na esquerda da imagem, descartamos o retangulo
+# Pois a assinatura deve estar na direita da imagem
+# Talvez seja uma boa ideia adicionar uma margem de erro para casos em que a assinatura esteja um pouco deslocada
+minimal = min(cnt[0][0], cnt[2][0])
+if(minimal < (img.shape[1]/2)):
+    continue
+
+# Verifica se o contorno atual ja está no array de contornos evitando assim contornos duplicados
+if(VerifyBorder(squares, cnt)):
+    continue
+
+# Armazena o contorno do retangulo
+squares.append(cnt)
+```
+
+Apos o armazenamento dos contornos, retorna o array que os contem:
+```python
+return squares
+```
 
 
 
