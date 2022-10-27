@@ -251,6 +251,110 @@ Apos o armazenamento dos contornos, retorna o array que os contem:
 return squares
 ```
 
+Retornando a função App() e agora de posso dos contornos retangulares da nossa imagem, vamos extrai-los da imagem original, aplicar alguns processamento para melhora-los e destaca-los:
+```python
+# Array para armazenar as imagens das assinaturas recortadas e processadas
+signatures = []
+
+# Array para armazenar as imagens processadas no formato legivel pela biblioteca TKinter
+signatures_pil = []
+
+# Array para armazenar os campos de texto das assinaturas
+signatures_entrys = []
+
+# Iterador para inserção de dados em arrays
+i = 0
+
+# Para cada retangulo encontrado
+for square in squares:
+
+    # Encontra as coordenadas do retangulo na imagem e extrai
+    x, y, w, h = cv2.boundingRect(square)
+    cv2.rectangle(img, (x, y), (x + w, y + h), (0, 255, 0), 2)
+    roi = img[y:y + h, x:x + w]
+
+    # Limpa possiveis bordas pretas do recorte
+    cleaned_crop = ClearBorder(roi)
+
+    # Processos para tentar remover possiveis ruidos do recorte
+    # Isso pode danificar a assinatura
+    eroded_crop = cv2.erode(cleaned_crop, np.ones((3, 3), np.uint8), iterations=1)    
+    ret, bin_eroded_crop = cv2.threshold(eroded_crop, 200, 255, cv2.THRESH_BINARY)
+
+    # Remove pequenos componentes conectados da imagem
+    inverted_crop = cv2.bitwise_not(bin_eroded_crop)
+    processed_crop = RemoveConectedComponentes(inverted_crop, 100)
+    processed_crop = InvertImage(processed_crop)
+
+    # Adquire o exato recorte da assinatura removendo o fundo branco
+    processed_crop = GetBoundRectangle(processed_crop) 
+
+    # Caso a imagem tenha completamente deteriorada devido o processamento, descarta a assinatura
+    if(isinstance(processed_crop, bool)):
+        continue
+
+    # Redimensiona a assinatura para um tamanho padrao
+    resized_crop = Resize(processed_crop)
+
+    # Adiciona a assinatura no array de assinaturas
+    signatures.append(resized_crop)
+
+    # Converte a assinatura para o formato PIL para ser exibida na tela do aplicativo
+    signatures_pil.append(ImageTk.PhotoImage(image=Image.fromarray(resized_crop)))
+
+    # Cria um entrada de texto para aquela imagem
+    signatures_entrys.append(tkinter.Entry(janela, width=50, name=str(i)))
+
+    i+=1
+
+# Cria os campos de texto do aplicativo
+for i in range(0, len(signatures_pil)):
+    tkinter.Label(janela, image=signatures_pil[i]).pack(expand=True)
+    signatures_entrys[i].insert(0, "Digite o nome da assinatura. Mantenha em branco para não utilizar a assinatura")
+    signatures_entrys[i].pack(expand=True)
+    signatures_entrys[i].bind("<Button-1>", EntryOnClick)
+
+# Cria o botão de salvar assinaturas
+tkinter.Button(janela, text="Salvar", width=42, command=lambda: SaveSignatures(janela, signatures)).pack(side=tkinter.BOTTOM, pady=5)
+
+# Inicia a aplicação
+janela.mainloop()
+```
+
+A função para remover componentes conectados utilizada:
+```python
+# Remove conjuntos de pixels conectados com min_pixels_quant ou menos
+def RemoveConectedComponentes(img, min_pixels_quant):
+
+    nb_components, output, stats, centroids = cv2.connectedComponentsWithStats(
+        img, connectivity=8)
+    sizes = stats[1:, -1]
+    nb_components = nb_components - 1
+    min_size = min_pixels_quant
+    img_processada2 = np.zeros((output.shape))
+    for i in range(0, nb_components):
+        if sizes[i] >= min_size:
+            img_processada2[output == i + 1] = 255
+
+    return img_processada2
+```
+
+A função para inverter os pixels da imagem utilizada:
+```python
+# Inverte imagem
+def InvertImage(img):
+    img_copy = img
+    for y in range(0, img_copy.shape[1]):
+        for x in range(0, img_copy.shape[0]):
+            img_copy[x][y] = 255 - img_copy[x][y]
+
+    return img_copy
+```
+
+Exemplo do aplicativo mostrando as imagens obtidas e campos de texto para salva-las posteriormente se desejado.
+Note que nem todas as rubricas foram devidamente obtidas.
+
+
 
 
 
